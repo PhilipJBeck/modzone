@@ -1,0 +1,125 @@
+void interrupt keyhandler(void)
+{
+	code = inportb(KEYBD);      		// get scancode
+	val  = inport(PORT_B);           // strobe keyboard to ack the char
+
+	if(code > 0200)                   // a key has been released
+	{
+		switch (code)
+		{
+			case 200:   u=0;
+							if(d == 1) move = -1;
+							else move = 0;
+							break;
+			case 208:	d=0;
+							if(u == 1) move = 1;
+							else move = 0;
+							break;
+			case 205:   r=0;
+							if(l == 1) rotate = -1;
+							else rotate = 0;
+							break;
+			case 203:   l=0;
+							if(r == 1) rotate = 1;
+							else rotate = 0;
+							break;
+			case 157:	fire = 0;    break;
+		}  
+	}
+	else                        // a key has been pressed
+	{
+		switch (code)
+		{
+			case 72:		u=1;
+							if(d == 1) move = 0;
+							else move = 1;    
+							break;
+			case 80:    d=1;
+							if(u == 1) move = 0;
+							else move = -1;
+							break;
+			case 77:    r=1;
+							if(l == 1) rotate = 0;
+							else rotate = 1;  
+							break;
+			case 75:    l=1;
+							if(r == 1) rotate = 0;
+							else rotate = -1; 
+							break;
+			case 29:		fire = 1;    break;
+		}  
+	}
+	outport(PORT_B, val | KBIT);		// strobe the bit high
+	outport(PORT_B, val);            // strobe the bit low
+
+	outport(INT_CTL, ENABLE);		// re-enable 8259A controller
+}
+
+
+void interrupt timhandler(void)
+{
+//	tm++;
+	freezemove = move;					  // SNAP SHOT BEFORE KEYBOARD ALTERS MOVE AND ROTATE
+	freezerotate = rotate;
+												  // TWO IFs CHANGED TO ONE 
+	if(speed >= -100 && speed <= 100)  // BETWEEN -100 AND 100 ?
+	{
+		if(freezemove==1) speed += 5;    // SPEED UP OR SLOW DOWN...
+		if(freezemove==-1) speed -= 5;
+	}
+	else if(speed < -100) speed = -100;  // CATCH SPEED LIMIT ..REVERSE
+		  else speed = 100;               //                   ..FORWARDS
+
+	if(freezerotate == 1)     // IF YOU TURN THE WHEELS TO THE RIGHT
+	{
+		if(speed <0)           // AND YOU'RE GOING BACKWARDS
+		{
+			ti--;               // NOSE SWINGS LEFT
+			tsin_y--;
+			tcos_y--;
+		}
+		else  // speed  is >= 0      // ELSE YOU'RE GOING FORWARDS
+		{
+			ti++;                     // SO NOSE SWINGS RIGHT
+			tsin_y++;
+			tcos_y++;
+		}
+	}
+	if(freezerotate == -1)    // IF YOU TURN THE WHEELS TO THE LEFT
+	{
+		if(speed <0)           // AND YOU'RE GOING BACKWARDS
+		{
+			ti++;               // NOSE SWINGS RIGHT
+			tsin_y++;
+			tcos_y++;
+		}
+		else   // speed is >= 0      // ELSE YOU'RE GOING FORWARDS
+		{
+			ti--;                     // SO NOSE SWINGS LEFT
+			tsin_y--;
+			tcos_y--;
+		}
+	}
+	if(ti == 256)             // WRAP AROUND TRIG TABLE INDEX
+	{
+		ti = 0;
+		tsin_y = trig;
+		tcos_y = tsin_y + 64;
+	}
+	if(ti == -1)
+	{
+		ti = 255;
+		tsin_y = trig + 255;
+		tcos_y = tsin_y + 64;
+	}
+
+	viewer_x += (speed * *sin_y) >> 9;
+	viewer_z += (speed * *cos_y) >> 9;
+
+	doo = !doo;                      // do deceleration
+	if(doo) 
+	{ 
+		if(speed > 0 && freezemove==0) speed -= 1;
+		if(speed < 0 && freezemove==0) speed += 1;
+	}
+}
