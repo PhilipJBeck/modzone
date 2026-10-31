@@ -67,6 +67,8 @@ void main(void)
   viewer_z = -10100;
 
   initgraph(&g_driver, &g_mode, "c:\\TC\\BGI");
+  sdlbgifast();
+
   errorcode = graphresult();
   if (errorcode < 0)
   {
@@ -328,6 +330,8 @@ void main(void)
 		outtextxy(300,10,zstr);
 */
 		setvisualpage(page);
+		refresh();
+
 	} while (!exit_flag);
 
 	closegraph();

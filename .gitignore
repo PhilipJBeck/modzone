@@ -7,3 +7,6 @@
 # Ignore VS Code specific local settings
 .vscode/
 *.code-workspace
+
+# Ignore the compiled output binary
+modzone
