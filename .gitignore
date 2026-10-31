@@ -1,0 +1,9 @@
+# Ignore Chromebook / Linux system files
+.DS_Store
+.directory
+*.swp
+*~
+
+# Ignore VS Code specific local settings
+.vscode/
+*.code-workspace
